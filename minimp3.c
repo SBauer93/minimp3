@@ -2,7 +2,6 @@
  * MPEG Audio Layer III decoder
  * Copyright (c) 2001, 2002 Fabrice Bellard,
  *           (c) 2007 Martin J. Fiedler
- * Praise Bertoism!!1!
  *
  * This file is a stripped-down version of the MPEG Audio decoder from
  * the FFmpeg libavcodec library.
@@ -70,7 +69,7 @@
         }
         return res;
     }
-    static INLINE int MULH(int a, int b) {
+     static INLINE int MULH(int a, int b) {
         int res;
         __asm {
             mov eax, a
@@ -78,7 +77,7 @@
             mov res, edx
         }
         return res;
-    }
+    } 
 #endif
 #define MULS(ra, rb) ((ra) * (rb))
 
