@@ -1654,6 +1654,10 @@ static int huffman_decode(
 static void compute_imdct(
     mp3_context_t *s, granule_t *g, int32_t *sb_samples, int32_t *mdct_buf
 ) {
+	// tmp variable is used to transfer current value of mdct_win through the FIFO for use in the hardware
+	int16_t mdct_win_tmp = mdct_win;
+
+
     //int32_t *ptr, *win, *win1, *buf, *out_ptr, *ptr1;
     //int32_t out2[12];
     //int i, j, mdct_long_end, v, sblimit;
