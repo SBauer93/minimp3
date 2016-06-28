@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>			
 
+// Just a comment to check, whether the Git integration works on my computer
 #define FIFO_IN "HW_DATA_IN"		// From Software to Hardware
 #define FIFO_OUT "HW_DATA_OUT"		// From Hardware to Software
 #define MP3_FRAME_SIZE 1152
