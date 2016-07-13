@@ -1656,7 +1656,21 @@ static void compute_imdct(
 ) {
 	// tmp variable is used to transfer current value of mdct_win through the FIFO for use in the hardware
 	int16_t mdct_win_tmp = mdct_win;
+	unsigned char *ptr = (unsigned char*)g;
 
+	// INPUT-SIDE
+	//************************************************
+	//
+	FILE *fifo_in = fopen(FIFO_IN, "w");		// file pointer for putting stuff in the FIFO
+
+	fwrite(sb_samples, sizeof(int32_t), 1, fifo_in);
+	fwrite(mdct_buf, sizeof(int32_t), 1, fifo_in);
+	fwrite(&mdct_win_tmp, sizeof(int16_t), 1, fifo_in);
+	for (int i = 0; i < sizeof(granule_t); ++i) {				// Every element is written separately to the FIFO
+		fwrite((int32_t)ptr[i], sizeof(int32_t), 1, fifo_in);
+	}
+
+	fclose(fifo_in);	// close the connection to the FIFO	
 
     //int32_t *ptr, *win, *win1, *buf, *out_ptr, *ptr1;
     //int32_t out2[12];
@@ -2116,7 +2130,6 @@ static int mp_decode_layer3(mp3_context_t *s) {
     static granule_t granules[2][2];
     static int16_t exponents[576];
     const uint8_t *ptr;
-	FILE *fifo_in = fopen(FIFO_IN, "w");		// file pointer for putting stuff in the FIFO
 
     if (s->lsf) {
         main_data_begin = get_bits(&s->gb, 8);
