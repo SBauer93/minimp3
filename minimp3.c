@@ -1651,9 +1651,9 @@ static int huffman_decode(
 //    buf[8 - 4] = MULH(t0, win[18 + 8 - 4]);
 //}
 
-static void compute_imdct(
-    mp3_context_t *s, granule_t *g, int32_t *sb_samples, int32_t *mdct_buf
-) {
+static void compute_imdct (
+    mp3_context_t *s, granule_t *g, int32_t *sb_samples, int32_t *mdct_buf, int ch, int gr )
+{
 	// tmp variable is used to transfer current value of mdct_win through the FIFO for use in the hardware
 	int16_t mdct_win_tmp = mdct_win;
 	unsigned char *ptr = (unsigned char*)g;
@@ -1663,14 +1663,31 @@ static void compute_imdct(
 	//
 	FILE *fifo_in = fopen(FIFO_IN, "w");		// file pointer for putting stuff in the FIFO
 
-	fwrite(sb_samples, sizeof(int32_t), 1, fifo_in);
-	fwrite(mdct_buf, sizeof(int32_t), 1, fifo_in);
-	fwrite(&mdct_win_tmp, sizeof(int16_t), 1, fifo_in);
+	fwrite(sb_samples, sizeof(int32_t), MP3_MAX_CHANNELS * 36 * SBLIMIT, fifo_in);		// the whole array is written to the FIFO 
+	fwrite(mdct_buf, sizeof(int32_t), MP3_MAX_CHANNELS * SBLIMIT * 18, fifo_in);
+	fwrite(&mdct_win_tmp, sizeof(int16_t), 8 * 36, fifo_in);
 	for (int i = 0; i < sizeof(granule_t); ++i) {				// Every element is written separately to the FIFO
 		fwrite((int32_t)ptr[i], sizeof(int32_t), 1, fifo_in);
 	}
+	fwrite(&ch, sizeof(int), 1, fifo_in);
+	fwrite(&gr, sizeof(int), 1, fifo_in);
 
 	fclose(fifo_in);	// close the connection to the FIFO	
+
+	// OUTPUT-SIDE
+	//************************************************
+	//
+	FILE *fifo_out = fopen(FIFO_OUT, "r");		// file pointer for gathering stuff from the FIFO
+
+	fread(&s->sb_samples, sizeof(int32_t), MP3_MAX_CHANNELS * 36 * SBLIMIT, fifo_out);		// the whole array is read from the FIFO 
+	fread(&s->mdct_buf, sizeof(int32_t), MP3_MAX_CHANNELS * SBLIMIT * 18, fifo_out);
+	fread(&mdct_win, sizeof(int16_t), 8 * 36, fifo_out);
+	for (int i = 0; i < sizeof(granule_t); ++i) {				// Every element is read separately from the FIFO
+		fread((int32_t)ptr[i], sizeof(int32_t), 1, fifo_out);
+	}
+	
+	fclose(fifo_out);	// close the connection to the FIFO	
+
 
     //int32_t *ptr, *win, *win1, *buf, *out_ptr, *ptr1;
     //int32_t out2[12];
@@ -2384,12 +2401,12 @@ static int mp_decode_layer3(mp3_context_t *s) {
         if (s->nb_channels == 2)
             compute_stereo(s, &granules[0][gr], &granules[1][gr]);
 
-		mp3_context_t *bernd;
         for(ch=0;ch<s->nb_channels;ch++) {
             g = &granules[ch][gr];
             reorder_block(s, g);
-            compute_antialias(s, g);
-            compute_imdct(bernd, g, &s->sb_samples[ch][18 * gr][0], s->mdct_buf[ch]);
+			compute_antialias(s, g);
+            compute_imdct(s, g, &s->sb_samples[0][0][0], s->mdct_buf[0], ch, gr);
+			// compute_imdct(bernd, g, &s->sb_samples[ch][18 * gr][0], s->mdct_buf[ch]);
         }
     } /* gr */
     return nb_granules * 18;
